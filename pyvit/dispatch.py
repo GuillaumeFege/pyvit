@@ -15,9 +15,6 @@ class Dispatcher:
         self._running = False
 
     def add_receiver(self, rx_queue):
-        if self.is_running:
-            raise Exception('dispatcher must be stopped to add receiver')
-
         # ensure the receive queue is a queue
         if not isinstance(rx_queue, multiprocessing.queues.Queue):
             raise ValueError('invalid receive queue, %s' % type(rx_queue))
@@ -28,9 +25,6 @@ class Dispatcher:
         self._rx_queues.append(rx_queue)
 
     def remove_receiver(self, rx_queue):
-        if self.is_runnning():
-            raise Exception('dispatcher must be stopped to remove receiver')
-
         # check the receive queue is in the dispatcher
         if rx_queue not in self._rx_queues:
             raise ValueError('rx_queue not in dispatcher')
