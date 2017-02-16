@@ -165,8 +165,9 @@ class IsotpInterface:
 
             # check timeout, since we may be receiving messages that do not
             # have the required arb_id
-            if time.time() - start > timeout:
-                return None
+            if timeout != None:
+                if time.time() - start > timeout:
+                    return None
 
         self._unset_filter()
         return data
