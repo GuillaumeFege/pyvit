@@ -3,7 +3,7 @@ from multiprocessing import Queue, Process
 
 
 class Dispatcher:
-    def __init__(self, device):
+    def __init__(self, device,debug=False):
         # ensure the device has the required method functions
         if not (hasattr(device, 'start') and hasattr(device, 'stop') and
                 hasattr(device, 'send') and hasattr(device, 'recv')):
@@ -13,6 +13,7 @@ class Dispatcher:
         self._rx_queues = []
         self._tx_queue = Queue()
         self._running = False
+        self._debug = debug
 
     def add_receiver(self, rx_queue):
         # ensure the receive queue is a queue
@@ -70,5 +71,7 @@ class Dispatcher:
     def _recv_loop(self):
         while True:
             data = self._device.recv()
+            if self._debug:
+                print("CAN " + repr(data.arb_id) + " -> " + repr(data.data))
             for rx_queue in self._rx_queues:
                 rx_queue.put_nowait(data)
