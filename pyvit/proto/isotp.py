@@ -5,6 +5,10 @@ from enum import Enum
 
 from .. import can
 
+class Isotp_Error(Exception):
+    def __init__(self,str):
+        super(Isotp_Error,self).__init__(str)
+
 class Isotp_Mtype(Enum):
     diagnostic = 1
     remote_diagnostic = 2
@@ -204,7 +208,8 @@ class IsotpInterface:
 
         return data
 
-    def send(self, data, tx_arb_id, rx_arb_id):
+    def send(self, data, tx_arb_id, rx_arb_id, N_As=1, N_Bs=1,N_Cs=1):
+        #TODO use N_as for sending timeout
         if len(data) > 4095:
             raise ValueError('ISOTP data must be <= 4095 bytes long')
 
@@ -250,14 +255,22 @@ class IsotpInterface:
                     fc_bs -= 1
                     if fc_bs == 0:
                         #Must wait for a flow control frame
+                        start = time.time()
                         while True:
-                            rx_frame = self._recv_queue.get()
-                            if (rx_frame.arb_id == rx_arb_id and
-                                    rx_frame.data[0] == 0x30):
-                                # flow control frame received
-                                fc_bs    = rx_frame.data[1]
-                                fc_stmin = rx_frame.data[2]
-                                break
+                            queu_timeout = (time.time() - start + N_Bs)
+                            try:
+                                rx_frame = self._recv_queue.get(timeout=queu_timeout)
+                                if (rx_frame.arb_id == rx_arb_id and
+                                        rx_frame.data[0] == 0x30):
+                                    # flow control frame received
+                                    fc_bs    = rx_frame.data[1]
+                                    fc_stmin = rx_frame.data[2]
+                                    break
+                                if (time.time() - start) > N_Bs:
+                                    raise Isotp_Error("N_Bs")
+                            except Empty:
+                                raise Isotp_Error("N_Bs")
+
                 #Wait for fc_stmin ms/us
                 if fc_stmin<0x80:
                     #fc_stmin equal to ms to wait
@@ -297,6 +310,10 @@ class IsotpInterface:
 class IsotpLinkLayer(IsotpInterface):
     def __init__(self, dispatcher, padding=0,debug=False):
         super(IsotpLinkLayer,self).__init__(dispatcher,padding,debug)
+        self.N_As = 1.0
+        self.N_Ar = 1.0
+        self.N_Bs = 1.0
+        self.N_Cr = 1.0
         
 
 class IsotpNetworkLayer(IsotpLinkLayer):
