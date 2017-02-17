@@ -33,7 +33,7 @@ class Isotp_Error(Exception):
 
 class IsotpN_USDataRequest:
     def __init__(self, Mtype,N_SA,N_TA,N_TAtype,data,N_AE=None):
-        self._Mtype = Mtype
+        self.Mtype      = Mtype
         self.N_SA       =   N_SA
         self.N_TA       =   N_TA
         self.N_TAtype   =   N_TAtype
@@ -43,6 +43,11 @@ class IsotpN_USDataRequest:
 class IsotpN_USDataConfirm:
     def __init__(self, IsotpN_USDataRequest, N_Result=Isotp_N_Result.N_OK):
         self._IsotpN_USDataRequest = IsotpN_USDataRequest
+        self.Mtype      = IsotpN_USDataRequest.Mtype
+        self.N_SA       = IsotpN_USDataRequest.N_SA
+        self.N_TA       = IsotpN_USDataRequest.N_TA
+        self.N_TAtype   = IsotpN_USDataRequest.N_TAtype
+        self.N_AE       = IsotpN_USDataRequest.N_AE
         self.N_Result = N_Result
 
 class IsotpN_USDataFFIndication:
@@ -55,7 +60,7 @@ class IsotpN_USDataFFIndication:
         self.N_AE       =   N_AE
 
 class IsotpN_USDataIndication:
-    def __init__(self, Mtype,N_SA,N_TA,N_TAtype,data,N_Result,N_AE=None):
+    def __init__(self, Mtype,N_SA,N_TA,N_TAtype,data,N_Result=Isotp_N_Result.N_OK,N_AE=None):
         self._Mtype = Mtype
         self.N_SA       =   N_SA
         self.N_TA       =   N_TA
@@ -186,7 +191,7 @@ class IsotpInterface:
         else:
             raise ValueError('invalid PCItype parameter')
 
-    def recv(self, rx_arb_id, tx_arb_id, timeout=1,bs=0,stmin=0):
+    def recv(self, rx_arb_id, tx_arb_id, timeout=1,bs=0,stmin=0, N_Cr=1):
         data = None
         start = time.time()
 
@@ -199,7 +204,7 @@ class IsotpInterface:
         while data is None:
             # attempt to get data, returning None if we timeout
             try:
-                rx_frame = self._recv_queue.get(timeout=timeout)
+                rx_frame = self._recv_queue.get(timeout=N_Cr)
             except Empty:
                 return None
 
@@ -340,10 +345,11 @@ class IsotpLinkLayer(IsotpInterface):
         except Isotp_Error as e:
             return IsotpN_USDataConfirm(USDataRequest, e.Isotp_N_Result)
 
-class IsotpNetworkLayer(IsotpLinkLayer):
-    def __init__(self, dispatcher, padding=0,debug=False):
-        super(IsotpNetworkLayer,self).__init__(dispatcher,padding,debug)
-
-
-
+    def wait_IndicationForConfirm(self,USDataConfirm):
+        try:
+            data = self.recv(USDataConfirm.N_SA,USDataConfirm.N_TA)
+            if data != None:
+                return IsotpN_USDataIndication(Isotp_Mtype.diagnostic,USDataConfirm.N_SA,USDataConfirm.N_TA,USDataConfirm.N_TAtype,data)
+        except Isotp_Error as e:
+            return IsotpN_USDataIndication(Isotp_Mtype.diagnostic,USDataConfirm.N_SA,USDataConfirm.N_TA,USDataConfirm.N_TAtype,NULL,e.Isotp_N_Result)
 
