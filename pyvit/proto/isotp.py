@@ -35,17 +35,6 @@ class IsotpInterface:
         self.data_len = 0
         return tmp
 
-    def _set_filter(self):
-        if (hasattr(self._dispatcher._device, "set_filter_id") and
-                hasattr(self._dispatcher._device, "set_filter_mask")):
-            self._dispatcher._device.set_filter_id(self.rx_arb_id)
-            self._dispatcher._device.set_filter_mask(0x7FF)
-
-    def _unset_filter(self):
-        if (hasattr(self._dispatcher._device, "set_filter_id") and
-                hasattr(self._dispatcher._device, "set_filter_mask")):
-            self._dispatcher._device.set_filter_mask(0)
-
     def reset(self):
         # abort reading a message
         self.data = []
@@ -143,8 +132,6 @@ class IsotpInterface:
         data = None
         start = time.time()
 
-        self._set_filter()
-
         self.bs=bs
         if ( not(stmin <= 0x7F)
                 and not(stmin >= 0xF1 and stmin<=0xF9)):
@@ -169,14 +156,11 @@ class IsotpInterface:
                 if time.time() - start > timeout:
                     return None
 
-        self._unset_filter()
         return data
 
     def send(self, data):
         if len(data) > 4095:
             raise ValueError('ISOTP data must be <= 4095 bytes long')
-
-        self._set_filter()
 
         if len(data) < 8:
             # message is less than 8 bytes, use single frame
@@ -260,4 +244,3 @@ class IsotpInterface:
 
                 bytes_sent = bytes_sent + data_bytes_in_msg
 
-        self._unset_filter()
