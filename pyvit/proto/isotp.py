@@ -294,12 +294,12 @@ class IsotpInterface:
         self.send(payload,N_TA,N_SA)
         return self.recv(N_SA,N_TA)
 
-def IsotpLinkLayer(IsotpInterface):
+class IsotpLinkLayer(IsotpInterface):
     def __init__(self, dispatcher, padding=0,debug=False):
         super(IsotpLinkLayer,self).__init__(dispatcher,padding,debug)
         
 
-def IsotpNetworkLayer(IsotpLinkLayer):
+class IsotpNetworkLayer(IsotpLinkLayer):
     def __init__(self, dispatcher, padding=0,debug=False):
         super(IsotpNetworkLayer,self).__init__(dispatcher,padding,debug)
 
