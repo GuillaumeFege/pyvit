@@ -283,6 +283,9 @@ class IsotpInterface:
                     #print ("Wait for " + str(time_to_wait))
                     time.sleep(time_to_wait)
 
+                #Wait for N_Cs
+                time.sleep(N_Cs)
+
                 cf = can.Frame(tx_arb_id)
                 data_bytes_in_msg = min(len(data) - bytes_sent, 7)
 
