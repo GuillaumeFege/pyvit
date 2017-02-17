@@ -5,6 +5,36 @@ from queue import Empty
 from .. import can
 
 
+class IsotpN_USDataRequest:
+    def __init__(self, Mtype,N_SA,N_TA,N_TAtype,data):
+        self._Mtype = Mtype
+        self.N_SA       =   N_SA
+        self.N_TA       =   N_TA
+        self.N_TAtype   =   N_TAtype
+        self.data       =   data
+
+class IsotpN_USDataConfirm:
+    def __init__(self, IsotpN_USDataRequest, N_Result):
+        self._IsotpN_USDataRequest = IsotpN_USDataRequest
+        self.N_Result = N_Result
+
+class IsotpN_USDataFFIndication:
+    def __init__(self, Mtype,N_SA,N_TA,N_TAtype,length):
+        self._Mtype = Mtype
+        self.N_SA       =   N_SA
+        self.N_TA       =   N_TA
+        self.N_TAtype   =   N_TAtype
+        self.length     =   length
+
+class IsotpN_USDataIndication:
+    def __init__(self, Mtype,N_SA,N_TA,N_TAtype,data,N_Result):
+        self._Mtype = Mtype
+        self.N_SA       =   N_SA
+        self.N_TA       =   N_TA
+        self.N_TAtype   =   N_TAtype
+        self.data       =   data
+        self.N_Result   =   N_Result
+
 class IsotpInterface:
     debug = False
 
@@ -246,4 +276,8 @@ class IsotpInterface:
                     sequence_number = 0
 
                 bytes_sent = bytes_sent + data_bytes_in_msg
+
+    def send_and_recv_physical(self, N_SA, N_TA, payload):
+        self.send(payload,N_TA,N_SA)
+        return self.recv(N_SA,N_TA)
 
