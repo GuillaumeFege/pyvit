@@ -8,10 +8,8 @@ from .. import can
 class IsotpInterface:
     debug = False
 
-    def __init__(self, dispatcher, tx_arb_id, rx_arb_id, padding=0):
+    def __init__(self, dispatcher, padding=0):
         self._dispatcher = dispatcher
-        self.tx_arb_id = tx_arb_id
-        self.rx_arb_id = rx_arb_id
         self.padding_value = padding
         self._recv_queue = Queue()
 
@@ -21,7 +19,7 @@ class IsotpInterface:
         # pad data to 8 bytes
         return data + ([self.padding_value] * (8 - len(data)))
 
-    def _start_msg(self, arb_id=0):
+    def _start_msg(self):
         # initialize reading of a message
         self.data = []
         self.data_len = 0
@@ -40,7 +38,7 @@ class IsotpInterface:
         self.data = []
         self.data_len = 0
 
-    def parse_frame(self, frame):
+    def parse_frame(self, frame, tx_arb_id):
         # pci type is upper nybble of first byte
         pci_type = (frame.data[0] & 0xF0) >> 4
 
@@ -82,7 +80,7 @@ class IsotpInterface:
             self.sequence_number = self.sequence_number + 1
 
             # send a flow control frame
-            fc = can.Frame(self.tx_arb_id, data=[0x30, self.bs, self.stmin])
+            fc = can.Frame(tx_arb_id, data=[0x30, self.bs, self.stmin])
             self._dispatcher.send(fc)
             self.bs_counter = self.bs
 
@@ -122,13 +120,13 @@ class IsotpInterface:
                 if self.bs_counter == 0:
                     #Has to send flow control
                     self.bs_counter = self.bs
-                    fc = can.Frame(self.tx_arb_id, data=[0x30, self.bs, self.stmin])
+                    fc = can.Frame(tx_arb_id, data=[0x30, self.bs, self.stmin])
                     self._dispatcher.send(fc)
 
         else:
             raise ValueError('invalid PCItype parameter')
 
-    def recv(self, timeout=1,bs=0,stmin=0):
+    def recv(self, rx_arb_id, tx_arb_id, timeout=1,bs=0,stmin=0):
         data = None
         start = time.time()
 
@@ -145,10 +143,10 @@ class IsotpInterface:
             except Empty:
                 return None
 
-            if rx_frame.arb_id == self.rx_arb_id:
+            if rx_frame.arb_id == rx_arb_id:
                 if self.debug:
                     print(rx_frame)
-                data = self.parse_frame(rx_frame)
+                data = self.parse_frame(rx_frame,tx_arb_id)
 
             # check timeout, since we may be receiving messages that do not
             # have the required arb_id
@@ -158,14 +156,14 @@ class IsotpInterface:
 
         return data
 
-    def send(self, data):
+    def send(self, data, tx_arb_id, rx_arb_id):
         if len(data) > 4095:
             raise ValueError('ISOTP data must be <= 4095 bytes long')
 
         if len(data) < 8:
             # message is less than 8 bytes, use single frame
 
-            sf = can.Frame(self.tx_arb_id)
+            sf = can.Frame(tx_arb_id)
 
             # first byte is data length, remainder is data
             sf.data = self._pad_data([len(data)] + data)
@@ -178,7 +176,7 @@ class IsotpInterface:
             # message must be composed of FF and CF
 
             # first frame
-            ff = can.Frame(self.tx_arb_id)
+            ff = can.Frame(tx_arb_id)
 
             frame_data = []
             # FF pci type and msb of length
@@ -206,7 +204,7 @@ class IsotpInterface:
                         #Must wait for a flow control frame
                         while True:
                             rx_frame = self._recv_queue.get()
-                            if (rx_frame.arb_id == self.rx_arb_id and
+                            if (rx_frame.arb_id == rx_arb_id and
                                     rx_frame.data[0] == 0x30):
                                 # flow control frame received
                                 fc_bs    = rx_frame.data[1]
@@ -224,7 +222,7 @@ class IsotpInterface:
                     #print ("Wait for " + str(time_to_wait))
                     time.sleep(time_to_wait)
 
-                cf = can.Frame(self.tx_arb_id)
+                cf = can.Frame(tx_arb_id)
                 data_bytes_in_msg = min(len(data) - bytes_sent, 7)
 
                 frame_data = []
