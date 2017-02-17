@@ -5,10 +5,6 @@ from enum import Enum
 
 from .. import can
 
-class Isotp_Error(Exception):
-    def __init__(self,str):
-        super(Isotp_Error,self).__init__(str)
-
 class Isotp_Mtype(Enum):
     diagnostic = 1
     remote_diagnostic = 2
@@ -16,6 +12,24 @@ class Isotp_Mtype(Enum):
 class Isoyp_N_TAtype(Enum):
     physical   = 1
     functional = 2
+
+class Isotp_N_Result(Enum):
+    N_OK             = 1
+    N_TIMEOUT_A      = 2
+    N_TIMEOUT_Bs     = 3
+    N_TIMEOUT_Cr     = 4
+    N_WRONG_SN       = 5
+    N_INVALID_FS     = 6
+    N_UNEXP_PDU      = 7
+    N_WFT_OVRN       = 8
+    N_BUFFER_OVFLW   = 9
+    N_ERROR          = 10
+
+
+class Isotp_Error(Exception):
+    def __init__(self,Isotp_N_Result):
+        super(Isotp_Error,self).__init__("ISOTP Error " + repr(Isotp_N_Result))
+        self.Isotp_N_Result = Isotp_N_Result
 
 class IsotpN_USDataRequest:
     def __init__(self, Mtype,N_SA,N_TA,N_TAtype,data,N_AE=None):
@@ -27,10 +41,9 @@ class IsotpN_USDataRequest:
         self.N_AE       =   N_AE
 
 class IsotpN_USDataConfirm:
-    def __init__(self, IsotpN_USDataRequest, N_Result,N_AE=None):
+    def __init__(self, IsotpN_USDataRequest, N_Result=Isotp_N_Result.N_OK):
         self._IsotpN_USDataRequest = IsotpN_USDataRequest
         self.N_Result = N_Result
-        self.N_AE       =   N_AE
 
 class IsotpN_USDataFFIndication:
     def __init__(self, Mtype,N_SA,N_TA,N_TAtype,length,N_AE=None):
@@ -319,6 +332,13 @@ class IsotpLinkLayer(IsotpInterface):
     def send_and_recv_physical(self, N_SA, N_TA, payload):
         self.send(payload,N_TA,N_SA,self.N_As,self.N_Bs,self.N_Cs)
         return self.recv(N_SA,N_TA)
+
+    def send_Request(self, USDataRequest):
+        try:
+            self.send(USDataRequest.data,USDataRequest.N_TA,USDataRequest.N_SA,self.N_As,self.N_Bs,self.N_Cs)
+            return IsotpN_USDataConfirm(USDataRequest)
+        except Isotp_Error as e:
+            return IsotpN_USDataConfirm(USDataRequest, e.Isotp_N_Result)
 
 class IsotpNetworkLayer(IsotpLinkLayer):
     def __init__(self, dispatcher, padding=0,debug=False):
