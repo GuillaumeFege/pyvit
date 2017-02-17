@@ -1,39 +1,52 @@
 import time
 from multiprocessing import Queue
 from queue import Empty
+from enum import Enum
 
 from .. import can
 
+class Isotp_Mtype(Enum):
+    diagnostic = 1
+    remote_diagnostic = 2
+
+class Isoyp_N_TAtype(Enum):
+    physical   = 1
+    functional = 2
 
 class IsotpN_USDataRequest:
-    def __init__(self, Mtype,N_SA,N_TA,N_TAtype,data):
+    def __init__(self, Mtype,N_SA,N_TA,N_TAtype,data,N_AE=None):
         self._Mtype = Mtype
         self.N_SA       =   N_SA
         self.N_TA       =   N_TA
         self.N_TAtype   =   N_TAtype
         self.data       =   data
+        self.N_AE       =   N_AE
 
 class IsotpN_USDataConfirm:
-    def __init__(self, IsotpN_USDataRequest, N_Result):
+    def __init__(self, IsotpN_USDataRequest, N_Result,N_AE=None):
         self._IsotpN_USDataRequest = IsotpN_USDataRequest
         self.N_Result = N_Result
+        self.N_AE       =   N_AE
 
 class IsotpN_USDataFFIndication:
-    def __init__(self, Mtype,N_SA,N_TA,N_TAtype,length):
+    def __init__(self, Mtype,N_SA,N_TA,N_TAtype,length,N_AE=None):
         self._Mtype = Mtype
         self.N_SA       =   N_SA
         self.N_TA       =   N_TA
         self.N_TAtype   =   N_TAtype
         self.length     =   length
+        self.N_AE       =   N_AE
 
 class IsotpN_USDataIndication:
-    def __init__(self, Mtype,N_SA,N_TA,N_TAtype,data,N_Result):
+    def __init__(self, Mtype,N_SA,N_TA,N_TAtype,data,N_Result,N_AE=None):
         self._Mtype = Mtype
         self.N_SA       =   N_SA
         self.N_TA       =   N_TA
         self.N_TAtype   =   N_TAtype
         self.data       =   data
         self.N_Result   =   N_Result
+        self.N_AE       =   N_AE
+
 
 class IsotpInterface:
     debug = False
@@ -280,4 +293,16 @@ class IsotpInterface:
     def send_and_recv_physical(self, N_SA, N_TA, payload):
         self.send(payload,N_TA,N_SA)
         return self.recv(N_SA,N_TA)
+
+def IsotpLinkLayer(IsotpInterface):
+    def __init__(self, dispatcher, padding=0,debug=False):
+        super(IsotpLinkLayer,self).__init__(dispatcher,padding,debug)
+        
+
+def IsotpNetworkLayer(IsotpLinkLayer):
+    def __init__(self, dispatcher, padding=0,debug=False):
+        super(IsotpNetworkLayer,self).__init__(dispatcher,padding,debug)
+
+
+
 
