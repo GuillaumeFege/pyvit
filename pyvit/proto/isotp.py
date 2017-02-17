@@ -325,9 +325,9 @@ class IsotpInterface:
                 bytes_sent = bytes_sent + data_bytes_in_msg
 
 
-class IsotpLinkLayer(IsotpInterface):
+class IsotpNetworkLayer(IsotpInterface):
     def __init__(self, dispatcher, padding=0,debug=False):
-        super(IsotpLinkLayer,self).__init__(dispatcher,padding,debug)
+        super(IsotpNetworkLayer,self).__init__(dispatcher,padding,debug)
         self.N_As = 1.0
         self.N_Ar = 1.0
         self.N_Bs = 1.0
