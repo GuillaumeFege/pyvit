@@ -25,6 +25,15 @@ class UdsInterface(IsotpNetworkLayer):
         req = self._createRequest(ecuId, payload)
         return self._request(req)
 
+    def requestReadDataByIdentifier(self,ecuId,identifier):
+        idLsb = identifier & 0xFF
+        ifMsb = (identifier >> 8) & 0xFF
+        payload = [0x22, ifMsb, idLsb]
+        req = self._createRequest(ecuId, payload)
+        ret = self._request(req)
+        if(ret[0] == True):
+            return ret[1][3:]
+
     def requestInputOutputControlByIdentifier(self, ecuId, identifier, value):
         idLsb = identifier & 0xFF
         ifMsb = (identifier >> 8) & 0xFF
