@@ -8,11 +8,11 @@ from .. import can
 class IsotpInterface:
     debug = False
 
-    def __init__(self, dispatcher, padding=0):
+    def __init__(self, dispatcher, padding=0,debug=False):
         self._dispatcher = dispatcher
         self.padding_value = padding
         self._recv_queue = Queue()
-
+        self._debug=debug
         self._dispatcher.add_receiver(self._recv_queue)
 
     def _pad_data(self, data):
@@ -143,10 +143,15 @@ class IsotpInterface:
             except Empty:
                 return None
 
+            if self._debug:
+                print("ISOTP " + repr(rx_frame.arb_id) + " -> " + repr(rx_frame.data))
             if rx_frame.arb_id == rx_arb_id:
-                if self.debug:
-                    print(rx_frame)
+                if self._debug:
+                    print("-->ISOTP parse")
                 data = self.parse_frame(rx_frame,tx_arb_id)
+            else:
+                if self._debug:
+                    print("-->ISOTP DROP")
 
             # check timeout, since we may be receiving messages that do not
             # have the required arb_id
