@@ -208,7 +208,7 @@ class IsotpInterface:
 
         return data
 
-    def send(self, data, tx_arb_id, rx_arb_id, N_As=1, N_Bs=1,N_Cs=1):
+    def send(self, data, tx_arb_id, rx_arb_id, N_As=1, N_Bs=1,N_Cs=0):
         #TODO use N_as for sending timeout
         if len(data) > 4095:
             raise ValueError('ISOTP data must be <= 4095 bytes long')
@@ -306,9 +306,6 @@ class IsotpInterface:
 
                 bytes_sent = bytes_sent + data_bytes_in_msg
 
-    def send_and_recv_physical(self, N_SA, N_TA, payload):
-        self.send(payload,N_TA,N_SA)
-        return self.recv(N_SA,N_TA)
 
 class IsotpLinkLayer(IsotpInterface):
     def __init__(self, dispatcher, padding=0,debug=False):
@@ -317,7 +314,11 @@ class IsotpLinkLayer(IsotpInterface):
         self.N_Ar = 1.0
         self.N_Bs = 1.0
         self.N_Cr = 1.0
+        self.N_Cs = 0.0
         
+    def send_and_recv_physical(self, N_SA, N_TA, payload):
+        self.send(payload,N_TA,N_SA,self.N_As,self.N_Bs,self.N_Cs)
+        return self.recv(N_SA,N_TA)
 
 class IsotpNetworkLayer(IsotpLinkLayer):
     def __init__(self, dispatcher, padding=0,debug=False):
