@@ -25,6 +25,11 @@ class UdsInterface(IsotpNetworkLayer):
         req = self._createRequest(ecuId, payload)
         return self._request(req)
 
+    def requestReset(self, ecuId, resetType):
+        payload = [0x11, resetType]
+        req = self._createRequest(ecuId, payload)
+        return self._request(req)
+
     def requestReadDataByIdentifier(self,ecuId,identifier):
         idLsb = identifier & 0xFF
         ifMsb = (identifier >> 8) & 0xFF
